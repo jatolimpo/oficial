@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jato Limpo | Administração da Agenda</title>
+<style>
+:root{--azul:#0b5f88;--escuro:#062c43;--claro:#f5fbfe;--borda:#dbeaf1;--texto:#173746;--muted:#6a7f8a;--verde:#168f4c;--vermelho:#b93a3a;--amarelo:#956d00}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--texto);background:var(--claro)}
+.wrap{width:min(1080px,calc(100% - 24px));margin:0 auto}header{background:#fff;border-bottom:1px solid var(--borda);position:sticky;top:0;z-index:10}
+.top{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px}.brand strong{display:block;color:var(--escuro);font-size:1.08rem}.brand small{color:var(--muted)}
+button,input,select{font:inherit}button{cursor:pointer}.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:800}.btn-primary{background:var(--azul);color:#fff}.btn-light{background:#eef7fb;color:var(--azul)}.btn-danger{background:#fff0f0;color:var(--vermelho)}.btn-warning{background:#fff7df;color:var(--amarelo)}.btn-success{background:#ecfff3;color:var(--verde)}
+main{padding:28px 0 60px}.login{max-width:440px;margin:50px auto;background:#fff;border:1px solid var(--borda);border-radius:22px;padding:26px}.login h1{font-size:1.6rem;color:var(--escuro);margin:0 0 8px}.login p{color:var(--muted)}
+label{display:block;font-size:.9rem;font-weight:800;margin-bottom:7px}input,select{width:100%;border:1px solid #cfe2eb;border-radius:12px;padding:13px;background:#fff;outline:none}.row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}
+.dashboard{display:none}.headrow{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}.headrow h1{color:var(--escuro);margin:0 0 4px}.headrow p{color:var(--muted);margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:17px}.stat small{color:var(--muted);font-weight:750}.stat strong{display:block;font-size:1.65rem;color:var(--escuro);margin-top:3px}
+.filters{display:grid;grid-template-columns:1fr 180px 160px;gap:10px;margin-bottom:16px}.agenda{display:grid;gap:10px}.card{background:#fff;border:1px solid var(--borda);border-radius:17px;padding:17px;display:grid;grid-template-columns:160px 1fr auto;gap:18px;align-items:center}
+.when strong{display:block;color:var(--escuro);font-size:1.05rem}.when span{color:var(--azul);font-weight:900}.details strong{color:var(--escuro)}.details small{color:var(--muted);display:block;margin-top:3px}
+.badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.76rem;font-weight:900;margin-bottom:7px}.livre{background:#eafbf0;color:#257341}.ocupado{background:#fff0f0;color:#a33131}.bloqueado{background:#fff7df;color:#8b6700}
+.actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.empty,.message{background:#fff;border:1px solid var(--borda);border-radius:15px;padding:16px;color:var(--muted)}.message{margin-top:12px;display:none}.message.error{display:block;border-color:#f0c5c5;color:#9e3232;background:#fff4f4}.message.ok{display:block;border-color:#c5e9d0;color:#287342;background:#f2fff6}
+@media(max-width:720px){.filters{grid-template-columns:1fr 1fr}.filters input{grid-column:1/-1}.card{grid-template-columns:1fr;gap:10px}.actions{justify-content:flex-start}}@media(max-width:460px){.stats,.filters{grid-template-columns:1fr}.filters input{grid-column:auto}.row{flex-direction:column;align-items:stretch}}
+</style>
+</head>
+<body>
+<header><div class="wrap top"><div class="brand"><strong>Jato Limpo</strong><small>Administração da agenda</small></div><button id="sairBtn" class="btn btn-light" style="display:none">Sair</button></div></header>
+<main class="wrap">
+<section id="loginBox" class="login">
+<h1>Área administrativa</h1><p>Digite a senha da agenda para visualizar e administrar os horários.</p>
+<label for="senha">Senha</label><div class="row"><input id="senha" type="password" placeholder="Digite sua senha"><button id="entrarBtn" class="btn btn-primary">Entrar</button></div><div id="loginMsg" class="message"></div>
+</section>
+<section id="dashboard" class="dashboard">
+<div class="headrow"><div><h1>Agenda Jato Limpo</h1><p>Horários futuros, reservas e bloqueios.</p></div><button id="atualizarBtn" class="btn btn-light">Atualizar agenda</button></div>
+<div class="stats"><div class="stat"><small>Livres</small><strong id="statLivre">0</strong></div><div class="stat"><small>Agendados</small><strong id="statOcupado">0</strong></div><div class="stat"><small>Bloqueados</small><strong id="statBloqueado">0</strong></div></div>
+<div class="filters"><input id="busca" placeholder="Buscar nome, WhatsApp, serviço ou data"><select id="statusFiltro"><option value="">Todos os status</option><option value="LIVRE">Livres</option><option value="OCUPADO">Agendados</option><option value="BLOQUEADO">Bloqueados</option></select><select id="periodoFiltro"><option value="todos">Todos os dias</option><option value="hoje">Hoje</option><option value="7">Próximos 7 dias</option></select></div>
+<div id="adminMsg" class="message"></div><div id="agenda" class="agenda"></div>
+</section>
+</main>
+<script>
+const API="https://script.google.com/macros/s/AKfycbyaf9EXFQsZqVnk5-Nlv13lqbI6iElwMOTEsMGt0Ll2V6flp-BC2w0pODh0O8FStGQE/exec";let senhaAdmin="",registros=[];
+const $=id=>document.getElementById(id),loginBox=$("loginBox"),dashboard=$("dashboard"),senhaEl=$("senha"),entrarBtn=$("entrarBtn"),sairBtn=$("sairBtn"),atualizarBtn=$("atualizarBtn"),agendaEl=$("agenda"),loginMsg=$("loginMsg"),adminMsg=$("adminMsg"),buscaEl=$("busca"),statusFiltro=$("statusFiltro"),periodoFiltro=$("periodoFiltro");
+function msg(el,t,x){el.className="message "+t;el.textContent=x}function clr(el){el.className="message";el.textContent=""}
+async function api(p){const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(p)});return await r.json()}
+async function entrar(){const senha=senhaEl.value.trim();if(!senha)return msg(loginMsg,"error","Digite a senha.");entrarBtn.disabled=true;entrarBtn.textContent="Entrando...";clr(loginMsg);try{const d=await api({acao:"admin_list",senha});if(!d.sucesso)return msg(loginMsg,"error",d.mensagem||"Senha inválida.");senhaAdmin=senha;registros=d.registros||[];loginBox.style.display="none";dashboard.style.display="block";sairBtn.style.display="inline-flex";render()}catch(e){msg(loginMsg,"error","Não foi possível acessar a agenda.")}finally{entrarBtn.disabled=false;entrarBtn.textContent="Entrar"}}
+async function carregar(){atualizarBtn.disabled=true;atualizarBtn.textContent="Atualizando...";clr(adminMsg);try{const d=await api({acao:"admin_list",senha:senhaAdmin});if(!d.sucesso)return msg(adminMsg,"error",d.mensagem||"Não foi possível atualizar.");registros=d.registros||[];render()}catch(e){msg(adminMsg,"error","Não foi possível atualizar a agenda.")}finally{atualizarBtn.disabled=false;atualizarBtn.textContent="Atualizar agenda"}}
+function hojeISO(add=0){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+add);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function render(){const b=buscaEl.value.trim().toLowerCase(),st=statusFiltro.value,p=periodoFiltro.value,h=hojeISO(),l=hojeISO(7);$("statLivre").textContent=registros.filter(r=>r.status==="LIVRE").length;$("statOcupado").textContent=registros.filter(r=>r.status==="OCUPADO").length;$("statBloqueado").textContent=registros.filter(r=>r.status==="BLOQUEADO").length;const f=registros.filter(r=>{if(st&&r.status!==st)return false;if(p==="hoje"&&r.data!==h)return false;if(p==="7"&&(r.data<h||r.data>l))return false;if(b&&!([r.dataBr,r.horario,r.nome,r.whatsapp,r.servico,r.cep,r.numero,r.status].join(" ").toLowerCase().includes(b)))return false;return true});agendaEl.innerHTML="";if(!f.length){agendaEl.innerHTML='<div class="empty">Nenhum horário encontrado.</div>';return}f.forEach(r=>{const c=document.createElement("article");c.className="card";let det=r.status==="OCUPADO"?`<strong>${esc(r.nome)}</strong><small>${esc(r.servico)} · ${esc(r.whatsapp)}</small><small>CEP ${esc(r.cep||"-")} · Nº ${esc(r.numero||"-")}</small>`:r.status==="BLOQUEADO"?'<strong>Horário bloqueado</strong><small>Não aparece para clientes no site.</small>':'<strong>Horário disponível</strong><small>Visível na agenda pública.</small>';let a=r.status==="LIVRE"?`<button class="btn btn-warning" data-acao="admin_block" data-linha="${r.linha}">Bloquear</button>`:r.status==="BLOQUEADO"?`<button class="btn btn-success" data-acao="admin_release" data-linha="${r.linha}">Liberar</button>`:`<button class="btn btn-danger" data-acao="admin_cancel" data-linha="${r.linha}">Cancelar agendamento</button>`;c.innerHTML=`<div class="when"><span class="badge ${r.status.toLowerCase()}">${r.status}</span><strong>${esc(r.dataBr)}</strong><span>${esc(r.horario)}</span></div><div class="details">${det}</div><div class="actions">${a}</div>`;agendaEl.appendChild(c)})}
+async function acao(a,l){const nomes={admin_block:"bloquear este horário",admin_release:"liberar este horário",admin_cancel:"cancelar este agendamento e liberar o horário"};if(!confirm("Deseja realmente "+nomes[a]+"?"))return;try{const d=await api({acao:a,senha:senhaAdmin,linha:Number(l)});if(!d.sucesso)return msg(adminMsg,"error",d.mensagem||"A operação não foi concluída.");msg(adminMsg,"ok",d.mensagem||"Operação realizada.");await carregar()}catch(e){msg(adminMsg,"error","Não foi possível concluir a operação.")}}
+entrarBtn.addEventListener("click",entrar);senhaEl.addEventListener("keydown",e=>{if(e.key==="Enter")entrar()});atualizarBtn.addEventListener("click",carregar);buscaEl.addEventListener("input",render);statusFiltro.addEventListener("change",render);periodoFiltro.addEventListener("change",render);sairBtn.addEventListener("click",()=>{senhaAdmin="";registros=[];senhaEl.value="";dashboard.style.display="none";loginBox.style.display="block";sairBtn.style.display="none"});agendaEl.addEventListener("click",e=>{const b=e.target.closest("button[data-acao]");if(b)acao(b.dataset.acao,b.dataset.linha)});
+</script>
+</body>
+</html>
